@@ -45,7 +45,7 @@ export function App() {
     const count = await db.providers.count();
     if (count > 0) return;
     await db.providers.add({
-      name: 'Default OpenAI Compatible',
+      name: '默认服务商（OpenAI兼容）',
       baseUrl: 'https://api.openai.com/v1',
       apiKey: '',
       modelDefault: 'gpt-4.1',
@@ -85,7 +85,7 @@ export function App() {
   }
 
   async function createProject() {
-    const name = `新脚本 ${projects.length + 1}`;
+    const name = `我的故事 ${projects.length + 1}`;
     const id = await db.projects.add({
       name,
       genreProfileId: DEFAULT_GENRE,
@@ -106,7 +106,7 @@ export function App() {
       {
         projectId: activeProjectId,
         role: 'assistant',
-        content: `【占位回复】provider=${activeProvider?.name ?? 'N/A'}，已记录输入：${userContent}`,
+        content: `【系统占位回复】已记录你的输入，当前服务商：${activeProvider?.name ?? '未设置'}`,
         createdAt: new Date(Date.now() + 1).toISOString(),
       },
     ]);
@@ -144,8 +144,9 @@ export function App() {
   return (
     <div className="layout">
       <aside className="sidebar">
-        <h2>Projects</h2>
-        <button onClick={createProject}>+ 新建脚本</button>
+        <h2>📚 我的脚本</h2>
+        <button onClick={createProject}>+ 新建一个故事</button>
+        <p className="hint">先点“新建一个故事”，再开始聊天写作。</p>
         <ul>
           {projects.map((p) => (
             <li key={p.id}>
@@ -158,30 +159,38 @@ export function App() {
       </aside>
       <main className="chat">
         <header className="topbar">
-          <h1>{activeProject?.name ?? '请先创建脚本'}</h1>
+          <h1>{activeProject?.name ?? '请先创建一个故事'}</h1>
           <div className="topbar-actions">
-            <select value={activeProvider?.id ?? ''} onChange={(e) => void switchProvider(Number(e.target.value))}>
-              {providers.map((provider) => (
-                <option key={provider.id} value={provider.id}>
-                  {provider.name}
-                </option>
-              ))}
-            </select>
-            <button onClick={exportStory}>导出 story.json</button>
-            <button onClick={exportLore}>导出 lore.json</button>
-            <button onClick={exportSnapshot}>导出 snapshot.json</button>
+            <label className="field">
+              <span>服务商</span>
+              <select value={activeProvider?.id ?? ''} onChange={(e) => void switchProvider(Number(e.target.value))}>
+                {providers.map((provider) => (
+                  <option key={provider.id} value={provider.id}>
+                    {provider.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <button onClick={exportStory}>导出故事</button>
+            <button onClick={exportLore}>导出设定</button>
+            <button onClick={exportSnapshot}>导出快照</button>
           </div>
         </header>
         <section className="messages">
+          {turns.length === 0 ? <p className="empty">还没有内容，试着输入一句剧情开始吧。</p> : null}
           {turns.map((t) => (
             <article key={t.id} className={`msg ${t.role}`}>
-              <strong>{t.role}</strong>
+              <strong>{t.role === 'user' ? '你' : 'AI'}</strong>
               <p>{t.content}</p>
             </article>
           ))}
         </section>
         <footer className="composer">
-          <textarea value={input} onChange={(e) => setInput(e.target.value)} placeholder="输入剧情推进或 leader 指令..." />
+          <textarea
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            placeholder="例如：我推开门，看见桌上有一封没署名的信..."
+          />
           <button onClick={submitTurn}>发送</button>
         </footer>
       </main>
